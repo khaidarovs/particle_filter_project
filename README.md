@@ -19,7 +19,7 @@ Sanzhar Khaidarov, Seha Choi
 
 #### normalize_particles & resample_particles
 
-- In order to normalize the weightings of the particles, we would add up all the weightings and then divide each separate weighting by the total, thus normalizing it. We would resample the particles with the proportional to the weights with replacement. We will check if after resampling the larger weighted particles are more preserved than the lower weighted particles.
+- In order to normalize the weightings of the particles, we would add up all the weightings and then divide each separate weighting by the total, thus normalizing it. We would resample the particles proportionally to the weights with replacement. We will check if after resampling, the larger weighted particles are more preserved than the lower weighted particles.
 
 #### update_estimated_robot_pose
 
