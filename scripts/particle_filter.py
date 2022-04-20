@@ -126,7 +126,8 @@ class ParticleFilter:
         self.tf_listener = TransformListener()
         self.tf_broadcaster = TransformBroadcaster()
 
-
+        while self.map.info.width == 0:
+            pass
         # intialize the particle cloud
         self.initialize_particle_cloud()
 
@@ -141,8 +142,24 @@ class ParticleFilter:
 
     def initialize_particle_cloud(self):
         
-        # TODO
+        for _ in range(self.num_particles):
+            p = Pose()
+            p.position = Point()
+            p.position.x = random_sample() * self.map.info.width * self.map.info.resolution + self.map.info.origin.position.x
+            print("width : %f", p.position.x)
+            print("res : %f", self.map.info.resolution)
+            print("height: %f", self.map.info.height)
+            p.position.y = (random_sample() * self.map.info.height) * self.map.info.resolution + self.map.info.origin.position.y
+            p.position.z = 0
+            p.orientation = Quaternion()
+            q = quaternion_from_euler(0, 0, random_sample() * 2 * (np.pi))
+            p.orientation.x = q[0]
+            p.orientation.y = q[1]
+            p.orientation.z = q[2]
+            p.orientation.w = q[3]
 
+            new_particle = Particle(p, 1)
+            self.particle_cloud.append(new_particle)
 
         self.normalize_particles()
 
@@ -289,6 +306,7 @@ class ParticleFilter:
     def update_particle_weights_with_measurement_model(self, data):
 
         # TODO
+        pass
         
 
     def update_particles_with_motion_model(self):
