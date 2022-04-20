@@ -12,6 +12,8 @@ from tf import TransformListener
 from tf import TransformBroadcaster
 from tf.transformations import quaternion_from_euler, euler_from_quaternion
 
+from likelihood_field import LikelihoodField
+
 import numpy as np
 from numpy.random import random_sample
 import math
@@ -32,6 +34,13 @@ def get_yaw_from_pose(p):
 
     return yaw
 
+#Function taken from class
+def compute_prob_zero_centered_gaussian(dist, sd):
+    """ Takes in distance from zero (dist) and standard deviation (sd) for gaussian
+        and returns probability (likelihood) of observation """
+    c = 1.0 / (sd * math.sqrt(2 * math.pi))
+    prob = c * math.exp((-math.pow(dist,2))/(2 * math.pow(sd, 2)))
+    return prob
 
 def draw_random_sample():
     """ Draws a random sample of n elements from a given list of choices and their specified probabilities.
@@ -50,6 +59,15 @@ class Particle:
 
         # particle weight
         self.w = w
+    
+    def __str__(self):
+        #taken from class
+        theta = euler_from_quaternion([
+            self.pose.orientation.x, 
+            self.pose.orientation.y, 
+            self.pose.orientation.z, 
+            self.pose.orientation.w])[2]
+        return ("Particle: [" + str(self.pose.position.x) + ", " + str(self.pose.position.y) + ", " + str(theta) + "]")
 
 
 
@@ -133,8 +151,12 @@ class ParticleFilter:
 
     def normalize_particles(self):
         # make all the particle weights sum to 1.0
-        
-        # TODO
+        # gets the sum of all weights and divide each particle
+        sum = 0
+        for p in self.particle_cloud:
+            sum += p.w
+        for p in self.particle_cloud:
+            p.w /= sum
 
 
 
@@ -163,9 +185,13 @@ class ParticleFilter:
 
     def resample_particles(self):
 
-        # TODO
-
-
+        # resample particles via their weights.
+        weight = []
+        for p in self.particle_cloud:
+            weight.append(p.w)
+        resample_parts = np.random.choice(self.particle_cloud, self.num_particles, p = weight)
+        for i in range(self.num_particles):
+            self.particle_cloud[i]= resample_parts[i]
 
     def robot_scan_received(self, data):
 
@@ -245,7 +271,6 @@ class ParticleFilter:
         # TODO
 
 
-    
     def update_particle_weights_with_measurement_model(self, data):
 
         # TODO
@@ -258,7 +283,25 @@ class ParticleFilter:
         # based on the how the robot has moved (calculated from its odometry), we'll  move
         # all of the particles correspondingly
 
-        # TODO
+        curr_x = self.odom_pose.pose.position.x
+        old_x = self.odom_pose_last_motion_update.pose.position.x
+        curr_y = self.odom_pose.pose.position.y
+        old_y = self.odom_pose_last_motion_update.pose.position.y
+        curr_yaw = get_yaw_from_pose(self.odom_pose.pose)
+        old_yaw = get_yaw_from_pose(self.odom_pose_last_motion_update.pose)
+
+        diff_x = curr_x - old_x
+        diff_y = curr_y - old_y
+        diff_yaw = curr_yaw - old_yaw
+
+        for p in self.particle_cloud:
+            p.pose.position.x += diff_x
+            p.pose.position.y += diff_y
+            q = quaternion_from_euler(0.0, 0.0, get_yaw_from_pose(p.pose) + diff_yaw)
+            p.orientation.x = q[0]
+            p.orientation.y = q[1]
+            p.orientation.z = q[2]
+            p.orientation.w = q[3]
 
 
 
