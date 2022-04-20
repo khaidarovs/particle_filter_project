@@ -190,8 +190,7 @@ class ParticleFilter:
         for p in self.particle_cloud:
             weight.append(p.w)
         resample_parts = np.random.choice(self.particle_cloud, self.num_particles, p = weight)
-        for i in range(self.num_particles):
-            self.particle_cloud[i]= resample_parts[i]
+        self.particle_cloud = resample_parts
 
     def robot_scan_received(self, data):
 
@@ -267,15 +266,29 @@ class ParticleFilter:
 
     def update_estimated_robot_pose(self):
         # based on the particles within the particle cloud, update the robot pose estimate
-        
-        # TODO
+        # Take an average of all particles and set that as new pose
+        sum_x = 0
+        sum_y = 0
+        sum_yaw = 0
+        for p in self.particle_cloud:
+            sum_x += p.pose.position.x
+            sum_y += p.pose.positiion.y
+            sum_yaw += get_yaw_from_pose(p.pose)
+        sum_x /= self.num_particles
+        sum_y /= self.num_particles
+        sum_yaw /= self.num_particles
+        self.robot_estimate.x = sum_x
+        self.robot_estimate.y = sum_y
+        q = quaternion_from_euler(0.0, 0.0, sum_yaw)
+        self.robot_estimate.orientation.x = q[0]
+        self.robot_estimate.orientation.y = q[1]
+        self.robot_estimate.orientation.z = q[2]
+        self.robot_estimate.orientation.w = q[3]
 
 
     def update_particle_weights_with_measurement_model(self, data):
 
         # TODO
-
-
         
 
     def update_particles_with_motion_model(self):
