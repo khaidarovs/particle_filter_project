@@ -145,11 +145,11 @@ class ParticleFilter:
         for _ in range(self.num_particles):
             p = Pose()
             p.position = Point()
-            p.position.x = random_sample() * self.map.info.width * self.map.info.resolution + self.map.info.origin.position.x
-            print("width : %f", p.position.x)
+            p.position.x = random_sample() * self.map.info.width * self.map.info.resolution/7 #+ self.map.info.origin.position.x/100
+            print("x pos : %f", p.position.x)
             print("res : %f", self.map.info.resolution)
             print("height: %f", self.map.info.height)
-            p.position.y = (random_sample() * self.map.info.height) * self.map.info.resolution + self.map.info.origin.position.y
+            p.position.y = (random_sample() * self.map.info.height) * self.map.info.resolution/7 + self.map.info.origin.position.y/3.7
             p.position.z = 0
             p.orientation = Quaternion()
             q = quaternion_from_euler(0, 0, random_sample() * 2 * (np.pi))
@@ -306,7 +306,22 @@ class ParticleFilter:
     def update_particle_weights_with_measurement_model(self, data):
 
         # TODO
-        pass
+        z_max = 4
+        for particle in self.particle_cloud:
+            q = 1
+            theta = euler_from_quaternion([
+            particle.pose.orientation.x, 
+            particle.pose.orientation.y, 
+            particle.pose.orientation.z, 
+            particle.pose.orientation.w])[2]
+            for i, val in enumerate(data.ranges):
+                rad_i = i * np.pi / 180
+                if val != z_max:
+                    x_ztk = particle.position.x + val*math.cos(theta + rad_i)
+                    y_ztk = particle.position.y + val*math.sin(theta + rad_i)
+                    dist = get_closest_obstacle_distance(particle.position.x, particle.position.y)
+                    q = q * compute_prob_zero_centered_gaussian(dist, 0.1)
+            particle.w = q
         
 
     def update_particles_with_motion_model(self):
