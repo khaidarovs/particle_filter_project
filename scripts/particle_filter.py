@@ -93,7 +93,7 @@ class ParticleFilter:
         self.map = OccupancyGrid()
 
         # the number of particles used in the particle filter
-        self.num_particles = 10000
+        self.num_particles = 500 #10000
 
         # initialize the particle cloud array
         self.particle_cloud = []
@@ -146,9 +146,9 @@ class ParticleFilter:
             p = Pose()
             p.position = Point()
             p.position.x = random_sample() * self.map.info.width * self.map.info.resolution/7 #+ self.map.info.origin.position.x/100
-            print("x pos : %f", p.position.x)
-            print("res : %f", self.map.info.resolution)
-            print("height: %f", self.map.info.height)
+            print("Particles initializing")
+            # print("res : %f", self.map.info.resolution)
+            # print("height: %f", self.map.info.height)
             p.position.y = (random_sample() * self.map.info.height) * self.map.info.resolution/7 + self.map.info.origin.position.y/3.7
             p.position.z = 0
             p.orientation = Quaternion()
@@ -203,6 +203,7 @@ class ParticleFilter:
     def resample_particles(self):
 
         # resample particles via their weights.
+        print("resampling particles")
         weight = []
         for p in self.particle_cloud:
             weight.append(p.w)
@@ -306,7 +307,9 @@ class ParticleFilter:
     def update_particle_weights_with_measurement_model(self, data):
 
         # TODO
+        print("Updating particle weights")
         z_max = 4
+        field = LikelihoodField()
         for particle in self.particle_cloud:
             q = 1
             theta = euler_from_quaternion([
@@ -317,11 +320,12 @@ class ParticleFilter:
             for i, val in enumerate(data.ranges):
                 rad_i = i * np.pi / 180
                 if val != z_max:
-                    x_ztk = particle.position.x + val*math.cos(theta + rad_i)
-                    y_ztk = particle.position.y + val*math.sin(theta + rad_i)
-                    dist = get_closest_obstacle_distance(particle.position.x, particle.position.y)
+                    x_ztk = particle.pose.position.x + val*math.cos(theta + rad_i)
+                    y_ztk = particle.pose.position.y + val*math.sin(theta + rad_i)
+                    dist = field.get_closest_obstacle_distance(particle.pose.position.x, particle.pose.position.y)
                     q = q * compute_prob_zero_centered_gaussian(dist, 0.1)
             particle.w = q
+            print("new particle weight is %f", q)
         
 
     def update_particles_with_motion_model(self):
@@ -344,10 +348,10 @@ class ParticleFilter:
             p.pose.position.x += diff_x
             p.pose.position.y += diff_y
             q = quaternion_from_euler(0.0, 0.0, get_yaw_from_pose(p.pose) + diff_yaw)
-            p.orientation.x = q[0]
-            p.orientation.y = q[1]
-            p.orientation.z = q[2]
-            p.orientation.w = q[3]
+            p.pose.orientation.x = q[0]
+            p.pose.orientation.y = q[1]
+            p.pose.orientation.z = q[2]
+            p.pose.orientation.w = q[3]
 
 
 
