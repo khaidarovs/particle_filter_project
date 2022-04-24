@@ -42,13 +42,23 @@ def compute_prob_zero_centered_gaussian(dist, sd):
     prob = c * math.exp((-math.pow(dist,2))/(2 * math.pow(sd, 2)))
     return prob
 
-def draw_random_sample():
+def draw_random_sample(n, map, prob):
     """ Draws a random sample of n elements from a given list of choices and their specified probabilities.
     We recommend that you fill in this function using random_sample.
     """
-    # TODO
     return
 
+def get_inside_map(n, map):
+    rand_idx = []
+    for i in range(len(map)):
+        if map[i] == 0:
+            rand_idx.append(i)
+    new_rand = np.random.choice(rand_idx, size = n)
+    return new_rand
+
+def account_error(n):
+    error = randint(-10,10) /100
+    return n * (1+error)
 
 class Particle:
 
@@ -92,8 +102,10 @@ class ParticleFilter:
         # inialize our map
         self.map = OccupancyGrid()
 
+        self.likelihood_field = LikelihoodField()
+
         # the number of particles used in the particle filter
-        self.num_particles = 500 #10000
+        self.num_particles = 10000
 
         # initialize the particle cloud array
         self.particle_cloud = []
@@ -141,15 +153,16 @@ class ParticleFilter:
     
 
     def initialize_particle_cloud(self):
-        
-        for _ in range(self.num_particles):
+        random_index = get_inside_map(self.num_particles, self.map.data)
+        #print(self.map)
+        for i in range(self.num_particles):
             p = Pose()
             p.position = Point()
-            p.position.x = random_sample() * self.map.info.width * self.map.info.resolution/7 #+ self.map.info.origin.position.x/100
-            print("Particles initializing")
+            p.position.x = (random_index[i] % self.map.info.width) * self.map.info.resolution + self.map.info.origin.position.x
+            #print("Particles initializing")
             # print("res : %f", self.map.info.resolution)
             # print("height: %f", self.map.info.height)
-            p.position.y = (random_sample() * self.map.info.height) * self.map.info.resolution/7 + self.map.info.origin.position.y/3.7
+            p.position.y = (random_index[i] // self.map.info.height) * self.map.info.resolution + self.map.info.origin.position.y
             p.position.z = 0
             p.orientation = Quaternion()
             q = quaternion_from_euler(0, 0, random_sample() * 2 * (np.pi))
@@ -158,12 +171,14 @@ class ParticleFilter:
             p.orientation.z = q[2]
             p.orientation.w = q[3]
 
-            new_particle = Particle(p, 1)
+            new_particle = Particle(p, 1.0)
             self.particle_cloud.append(new_particle)
 
         self.normalize_particles()
 
         self.publish_particle_cloud()
+
+        print("particles initialized")
 
 
     def normalize_particles(self):
@@ -248,7 +263,7 @@ class ParticleFilter:
             return
 
 
-        if self.particle_cloud:
+        if len(self.particle_cloud) != 0:
 
             # check to see if we've moved far enough to perform an update
 
@@ -290,13 +305,13 @@ class ParticleFilter:
         sum_yaw = 0
         for p in self.particle_cloud:
             sum_x += p.pose.position.x
-            sum_y += p.pose.positiion.y
+            sum_y += p.pose.position.y
             sum_yaw += get_yaw_from_pose(p.pose)
         sum_x /= self.num_particles
         sum_y /= self.num_particles
         sum_yaw /= self.num_particles
-        self.robot_estimate.x = sum_x
-        self.robot_estimate.y = sum_y
+        self.robot_estimate.position.x = sum_x
+        self.robot_estimate.position.y = sum_y
         q = quaternion_from_euler(0.0, 0.0, sum_yaw)
         self.robot_estimate.orientation.x = q[0]
         self.robot_estimate.orientation.y = q[1]
@@ -312,20 +327,21 @@ class ParticleFilter:
         field = LikelihoodField()
         for particle in self.particle_cloud:
             q = 1
-            theta = euler_from_quaternion([
-            particle.pose.orientation.x, 
-            particle.pose.orientation.y, 
-            particle.pose.orientation.z, 
-            particle.pose.orientation.w])[2]
+            theta = get_yaw_from_pose(particle.pose)
             for i, val in enumerate(data.ranges):
                 rad_i = i * np.pi / 180
-                if val != z_max:
+                print("in loop,, %d, %f", i, val)
+                if val <= data.range_max and val != 0:
                     x_ztk = particle.pose.position.x + val*math.cos(theta + rad_i)
                     y_ztk = particle.pose.position.y + val*math.sin(theta + rad_i)
-                    dist = field.get_closest_obstacle_distance(particle.pose.position.x, particle.pose.position.y)
-                    q = q * compute_prob_zero_centered_gaussian(dist, 0.1)
+                    
+                    dist = self.likelihood_field.get_closest_obstacle_distance(x_ztk, y_ztk)
+                    print("DIST")
+                    print(dist)
+                    
+                    q = q * (0.8 * compute_prob_zero_centered_gaussian(dist, 0.1) +1)
             particle.w = q
-            print("new particle weight is %f", q)
+            #print("new particle weight is %f", q)
         
 
     def update_particles_with_motion_model(self):
