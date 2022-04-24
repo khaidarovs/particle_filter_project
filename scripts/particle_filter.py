@@ -17,6 +17,7 @@ from likelihood_field import LikelihoodField
 import numpy as np
 from numpy.random import random_sample
 import math
+import copy
 
 from random import randint, random
 
@@ -190,6 +191,11 @@ class ParticleFilter:
         for p in self.particle_cloud:
             p.w /= sum
 
+        sum = 0
+        for p in self.particle_cloud:
+            sum += p.w
+        print("SUM", sum)
+
 
 
     def publish_particle_cloud(self):
@@ -223,7 +229,9 @@ class ParticleFilter:
         for p in self.particle_cloud:
             weight.append(p.w)
         resample_parts = np.random.choice(self.particle_cloud, self.num_particles, p = weight)
-        self.particle_cloud = resample_parts
+        for i in range(self.num_particles):
+            #I first just assigned the resample parts but kept giving error and deepcopy fixed it
+            self.particle_cloud[i] = copy.deepcopy(resample_parts[i])
 
     def robot_scan_received(self, data):
 
@@ -325,23 +333,29 @@ class ParticleFilter:
         print("Updating particle weights")
         z_max = 4
         field = LikelihoodField()
+        angles = [0, 45, 90, 135, 180, 225, 270, 315]
+        #Initially used all 360 degrees but was too laggy
         for particle in self.particle_cloud:
             q = 1
             theta = get_yaw_from_pose(particle.pose)
-            for i, val in enumerate(data.ranges):
-                rad_i = i * np.pi / 180
-                print("in loop,, %d, %f", i, val)
+            #for i, val in enumerate(data.ranges):
+            for ang in angles:
+                rad_i = ang * np.pi / 180
+                val = data.ranges[ang]
+                #print("in loop,, %d, %f", i, val)
                 if val <= data.range_max and val != 0:
                     x_ztk = particle.pose.position.x + val*math.cos(theta + rad_i)
                     y_ztk = particle.pose.position.y + val*math.sin(theta + rad_i)
                     
                     dist = self.likelihood_field.get_closest_obstacle_distance(x_ztk, y_ztk)
-                    print("DIST")
-                    print(dist)
-                    
-                    q = q * (0.8 * compute_prob_zero_centered_gaussian(dist, 0.1) +1)
+                    #print("DIST")
+                    #print(dist)
+                    if math.isnan(dist):
+                        q = q * (0.8 * 0.00001 + 1)
+                    else:
+                        q = q * (0.8 * compute_prob_zero_centered_gaussian(dist, 0.1) +1)
             particle.w = q
-            #print("new particle weight is %f", q)
+            print("new particle weight is %f", q)
         
 
     def update_particles_with_motion_model(self):
