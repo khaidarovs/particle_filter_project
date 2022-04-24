@@ -145,11 +145,14 @@ class ParticleFilter:
         for _ in range(self.num_particles):
             p = Pose()
             p.position = Point()
-            p.position.x = random_sample() * self.map.info.width * self.map.info.resolution/7 #+ self.map.info.origin.position.x/100
-            print("Particles initializing")
-            # print("res : %f", self.map.info.resolution)
-            # print("height: %f", self.map.info.height)
-            p.position.y = (random_sample() * self.map.info.height) * self.map.info.resolution/7 + self.map.info.origin.position.y/3.7
+            # p.position.x = random_sample() * self.map.info.width * self.map.info.resolution/7 #+ self.map.info.origin.position.x/100
+            # p.position.y = (random_sample() * self.map.info.height) * self.map.info.resolution/7 + self.map.info.origin.position.y/3.7
+            p.position.x = (random_sample() * self.map.info.width) * self.map.info.resolution + self.map.info.origin.position.x
+            p.position.y = (random_sample() * self.map.info.height) * self.map.info.resolution + self.map.info.origin.position.y
+            ind = p.position.x + p.position.y * self.map.info.width
+            while self.map.data[ind] == -1:
+                p.position.x = (random_sample() * self.map.info.width) * self.map.info.resolution + self.map.info.origin.position.x
+                p.position.y = (random_sample() * self.map.info.height) * self.map.info.resolution + self.map.info.origin.position.y
             p.position.z = 0
             p.orientation = Quaternion()
             q = quaternion_from_euler(0, 0, random_sample() * 2 * (np.pi))
@@ -158,6 +161,7 @@ class ParticleFilter:
             p.orientation.z = q[2]
             p.orientation.w = q[3]
 
+            print("Particle initialized")
             new_particle = Particle(p, 1)
             self.particle_cloud.append(new_particle)
 
@@ -322,7 +326,10 @@ class ParticleFilter:
                 if val != z_max:
                     x_ztk = particle.pose.position.x + val*math.cos(theta + rad_i)
                     y_ztk = particle.pose.position.y + val*math.sin(theta + rad_i)
-                    dist = field.get_closest_obstacle_distance(particle.pose.position.x, particle.pose.position.y)
+                    ind = x_ztk + y_ztk * self.map.info.width
+                    if self.map.data[ind] == -1:
+                        continue
+                    dist = field.get_closest_obstacle_distance(x_ztk, y_ztk)
                     q = q * compute_prob_zero_centered_gaussian(dist, 0.1)
             particle.w = q
             print("new particle weight is %f", q)
