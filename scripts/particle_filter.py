@@ -370,9 +370,9 @@ class ParticleFilter:
         curr_yaw = get_yaw_from_pose(self.odom_pose.pose)
         old_yaw = get_yaw_from_pose(self.odom_pose_last_motion_update.pose)
 
-        diff_x = curr_x - old_x
-        diff_y = curr_y - old_y
-        diff_yaw = curr_yaw - old_yaw
+        diff_x = curr_x - old_x + np.random.normal(0, 0.1)
+        diff_y = curr_y - old_y + np.random.normal(0, 0.1)
+        diff_yaw = curr_yaw - old_yaw + np.random.normal(0, 0.1)
 
         for p in self.particle_cloud:
             p.pose.position.x += diff_x
