@@ -37,5 +37,33 @@ Sanzhar Khaidarov, Seha Choi
 - Before Class 8: Write code for normalizing particles, resampling them and updating the robot's pose
 - Weekend before it's due: work with noise and perform some final corrections
 
+## Writeup
+
+### Objectives description
+- The goal of this project was to use the particle filter localization method to find the location of a robot inside a maze. Our main goal was to get some experience working with probabilistic models to pinpoint the location of a moving robot.
+
+### High-level discription
+- To solve the problem of robot localization we used the approach described in class - the particle filter localization. We first randomly spread 10000 particles around the maze, each with uniform weight. Once the robot started moving, the locations of the particles were updated with the motion model, then the weights of the particles were recomputed based on the similarity between the particle scan readings and the robot scan readings. Finally the particles were resampled based on their recomputed weights. Eventually, the particles converged to the location of the robot in the maze. 
+
+### Main Steps:
+
+#### Initialization of particle cloud
+- Location: lines 
+- We used a helper function in order to get the location of the maze on the map. The get_inside_map(n, map) uses the map's data attribute, which returns 0 for locations inside the maze, and returns a list of locations on the map that are inside the maze. We then use these locations in order to randomly assign x and y values for the position of each particle. In order to get the orientation, we multiply 2pi by a random number between 0 and 1, to get a random orientation. We then convert the obtained theta to quaternion and set the orientation of the particle.
+
+#### Movement model
+- Location: lines
+- For this step we calculated how much the robot has moved in x and y directions by looking at the difference between their last and current positions. We did the same for orientation. Once we got all the values, we added the differences to the x and y position values and the orientation value of the particle. The process was repeated for all particles in the cloud. 
+
+#### Measurement model
+- Location: lines
+- For this step, we initially considered all 360 degrees, however after testing, we found that using multiples of 45, for the angles to look at, was a better choice in terms of efficiency and accuracy. We then used the likelyhood_field_range_finder_model algorithm to compute the weights for each particle. We set Zhit to 0.8, Zrand and Zmax to 0.1 (each) in order to account for some noise in the environment. 
+
+#### Resampling
+
+
+
+
+
 
 
