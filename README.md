@@ -60,7 +60,28 @@ Sanzhar Khaidarov, Seha Choi
 - For this step, we initially considered all 360 degrees, however after testing, we found that using multiples of 45, for the angles to look at, was a better choice in terms of efficiency and accuracy. We then used the likelyhood_field_range_finder_model algorithm to compute the weights for each particle. We set Zhit to 0.8, Zrand and Zmax to 0.1 (each) in order to account for some noise in the environment. 
 
 #### Resampling
+- Location: lines 
+- In this step, we used np.random.choice in order to resample particles, taking into account the different weights of particles, specified in the weight list. As mentioned in the code, we then deepcopy the resampled particles back into the particle cloud. 
 
+#### Incorporation of noise
+- Location: 
+- We added noise to the distance and orientation values that we should update the particles' location and orientaion by. We sampled from normal distribution with standard deviation of 0.1, which we thought would result in a suitable amount of error.
+
+#### Updating estimated robot pose
+- Location:
+- For this step, we averaged the x and y positions of the particles on the grid. We then averaged the orientations of the particles on the grid, and assigned these averaged values for x, y  and theta to the estimated robot position and orientation. 
+
+#### Optimization of Parameters
+- Location:
+- 
+
+### Challenges
+- A big challenge was understanding how the topics such as OccupancyGrid() work and how to correctly use their attributes. This affected the difficulty of initializing the particle cloud and ensuring that the locations of the particles were randomly spread around the map of the maze. To overcome this challenge, we looked at the data attribute of the map, which is a 1D array of the map in row-major order. The locations within the maze had a value of 0 in data. Thus we took out these locations into a separate list, and chose random locations for x and y values from that list. 
+
+### Future Work
+- 
+
+### Takeaways
 
 
 
