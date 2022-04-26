@@ -47,6 +47,7 @@ def draw_random_sample(n, map, prob):
     """ Draws a random sample of n elements from a given list of choices and their specified probabilities.
     We recommend that you fill in this function using random_sample.
     """
+    #Did not use the function since this is essentially np.random.choice
     return
 
 def get_inside_map(n, map):
@@ -56,10 +57,6 @@ def get_inside_map(n, map):
             rand_idx.append(i)
     new_rand = np.random.choice(rand_idx, size = n)
     return new_rand
-
-def account_error(n):
-    error = randint(-10,10) /100
-    return n * (1+error)
 
 class Particle:
 
@@ -351,6 +348,7 @@ class ParticleFilter:
                     #print("DIST")
                     #print(dist)
                     if math.isnan(dist):
+                        #Since dist returns float nan for invalid entries we check
                         q = q * (0.8 * 0.00001 + 1)
                     else:
                         q = q * (0.8 * compute_prob_zero_centered_gaussian(dist, 0.1) +1)
@@ -373,6 +371,11 @@ class ParticleFilter:
         diff_x = curr_x - old_x
         diff_y = curr_y - old_y
         diff_yaw = curr_yaw - old_yaw
+
+        #added a random noise that has the standard deviation of 10 percent of original value
+        diff_x += np.random.normal(0, abs(0.1*diff_x))
+        diff_y += np.random.normal(0, abs(0.1*diff_y))
+        diff_yaw += np.random.normal(0, abs(0.1*diff_yaw))
 
         for p in self.particle_cloud:
             p.pose.position.x += diff_x
