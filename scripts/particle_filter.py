@@ -329,7 +329,7 @@ class ParticleFilter:
         # TODO
         print("Updating particle weights")
         z_max = 4
-        field = LikelihoodField()
+        field = self.likelihood_field
         angles = [0, 45, 90, 135, 180, 225, 270, 315]
         #Initially used all 360 degrees but was too laggy
         for particle in self.particle_cloud:
