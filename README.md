@@ -88,6 +88,7 @@ Sanzhar Khaidarov, Seha Choi
 ### Gif
 
 
+https://user-images.githubusercontent.com/93730296/165332450-8fa45f5e-e28a-42f3-b71a-eb8bd36e0cf6.mov
 
 
 
