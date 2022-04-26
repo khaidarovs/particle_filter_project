@@ -48,40 +48,45 @@ Sanzhar Khaidarov, Seha Choi
 ### Main Steps:
 
 #### Initialization of particle cloud
-- Location: lines 
+- Location: Implemented inside initialize_particle_cloud function on line 155
 - We used a helper function in order to get the location of the maze on the map. The get_inside_map(n, map) uses the map's data attribute, which returns 0 for locations inside the maze, and returns a list of locations on the map that are inside the maze. We then use these locations in order to randomly assign x and y values for the position of each particle. In order to get the orientation, we multiply 2pi by a random number between 0 and 1, to get a random orientation. We then convert the obtained theta to quaternion and set the orientation of the particle.
 
 #### Movement model
-- Location: lines
+- Location: Implemented inside update_particles_with_motion_model on line 338
 - For this step we calculated how much the robot has moved in x and y directions by looking at the difference between their last and current positions. We did the same for orientation. Once we got all the values, we added the differences to the x and y position values and the orientation value of the particle. The process was repeated for all particles in the cloud. 
 
 #### Measurement model
-- Location: lines
+- Location: Implemented inside update_particle_weights_with_measurement_model on line 317
 - For this step, we initially considered all 360 degrees, however after testing, we found that using multiples of 45, for the angles to look at, was a better choice in terms of efficiency and accuracy. We then used the likelyhood_field_range_finder_model algorithm to compute the weights for each particle. We set Zhit to 0.8, Zrand and Zmax to 0.1 (each) in order to account for some noise in the environment. 
 
 #### Resampling
-- Location: lines 
+- Location: Implemented inside resample_particles on line 213
 - In this step, we used np.random.choice in order to resample particles, taking into account the different weights of particles, specified in the weight list. As mentioned in the code, we then deepcopy the resampled particles back into the particle cloud. 
 
 #### Incorporation of noise
-- Location: 
+- Location: Implemented inside update_particles_with_motion_model on line 355
 - We added noise to the distance and orientation values that we should update the particles' location and orientaion by. We sampled from normal distribution with standard deviation of (0.1 * diff calculated), which we thought would result in a suitable amount of error.
 
 #### Updating estimated robot pose
-- Location:
+- Location: Implemented inside update_estimated_robot_pose on line 295
 - For this step, we averaged the x and y positions of the particles on the grid. We then averaged the orientations of the particles on the grid, and assigned these averaged values for x, y  and theta to the estimated robot position and orientation. 
 
 #### Optimization of Parameters
-- Location:
+- Location: Optimized the number of angles in update_particle_weights_with_measurement_model as well as noise in update_particles_with_motion_model
 - As it was mentioned above, some of the parameters we optimized were the angles at which we looked at the scan values of the turtlebot. Using multiples of 45 instead of all 360 degrees resulted in a more efficient and accurate performance of the localization algorithm. We left the number of particles at 10,000 for the same reason. In terms of noise, we incorporated noise in the motion model and added approximately 10% variation in each of the motion directions - x, y and orientation theta. After experimenting we came to a conclusion that this was a suitable amount of noise. 
 
 ### Challenges
-- A big challenge was understanding how the topics such as OccupancyGrid() work and how to correctly use their attributes. This affected the difficulty of initializing the particle cloud and ensuring that the locations of the particles were randomly spread around the map of the maze. To overcome this challenge, we looked at the data attribute of the map, which is a 1D array of the map in row-major order. The locations within the maze had a value of 0 in data. Thus we took out these locations into a separate list, and chose random locations for x and y values from that list. 
+- A big challenge was understanding how the topics such as OccupancyGrid() work and how to correctly use their attributes. This affected the difficulty of initializing the particle cloud and ensuring that the locations of the particles were randomly spread around the map of the maze. To overcome this challenge, we looked at the data attribute of the map, which is a 1D array of the map in row-major order. The locations within the maze had a value of 0 in data. Thus we took out these locations into a separate list, and chose random locations for x and y values from that list. Another challenge was optimizing the parameters to make the model more accurate, and this was done through a series of experiments with physical turtlebots and calibration of the parameters. 
 
 ### Future Work
-- 
+- If we had more time it would be useful to continue optimizing the parameters such as the number of particles, the number of angles we look at and so on, to make the model more accurate and efficient. It would also be useful to explore how this localization method works in other environments, such as bigger rooms or even whole building floors, and see what kind of noise gets introduced in such environments and what would be the best way to handle that. 
 
 ### Takeaways
+- The main takeaway from this project is getting experience working with other ros topics such as Pose and OccupancyGrid and just being more exposed to the different ways a robot can be operated and the ways in which it can receive information from the environment. This will definitely be useful going forward since we will be now able to incorporate the knowledge of localization and robot's position into the next and final projects.
+- Another takeaway was experience of working in pairs on a project like this. Working with physical turtlebots in pairs is definitely different than working on solely coding projects, but we managed to finish the project by splitting up the functions and then coming together to test them out and debug on the spot. This is a valuable experience that will definitely be useful in the remaining projects. 
+
+### Gif
+
 
 
 
