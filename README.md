@@ -65,7 +65,7 @@ Sanzhar Khaidarov, Seha Choi
 
 #### Incorporation of noise
 - Location: 
-- We added noise to the distance and orientation values that we should update the particles' location and orientaion by. We sampled from normal distribution with standard deviation of 0.1, which we thought would result in a suitable amount of error.
+- We added noise to the distance and orientation values that we should update the particles' location and orientaion by. We sampled from normal distribution with standard deviation of (0.1 * diff calculated), which we thought would result in a suitable amount of error.
 
 #### Updating estimated robot pose
 - Location:
@@ -73,7 +73,7 @@ Sanzhar Khaidarov, Seha Choi
 
 #### Optimization of Parameters
 - Location:
-- 
+- As it was mentioned above, some of the parameters we optimized were the angles at which we looked at the scan values of the turtlebot. Using multiples of 45 instead of all 360 degrees resulted in a more efficient and accurate performance of the localization algorithm. We left the number of particles at 10,000 for the same reason. In terms of noise, we incorporated noise in the motion model and added approximately 10% variation in each of the motion directions - x, y and orientation theta. After experimenting we came to a conclusion that this was a suitable amount of noise. 
 
 ### Challenges
 - A big challenge was understanding how the topics such as OccupancyGrid() work and how to correctly use their attributes. This affected the difficulty of initializing the particle cloud and ensuring that the locations of the particles were randomly spread around the map of the maze. To overcome this challenge, we looked at the data attribute of the map, which is a 1D array of the map in row-major order. The locations within the maze had a value of 0 in data. Thus we took out these locations into a separate list, and chose random locations for x and y values from that list. 
