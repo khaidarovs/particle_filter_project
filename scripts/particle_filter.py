@@ -51,6 +51,8 @@ def draw_random_sample(n, map, prob):
     return
 
 def get_inside_map(n, map):
+    """ A helper function that takes in the number of particles and a map and returns a random
+        set of locations which are inside the maze on the map"""
     rand_idx = []
     for i in range(len(map)):
         if map[i] == 0:
@@ -151,16 +153,12 @@ class ParticleFilter:
     
 
     def initialize_particle_cloud(self):
-        random_index = get_inside_map(self.num_particles, self.map.data)
-        #print(self.map)
+        random_index = get_inside_map(self.num_particles, self.map.data) # we get a set of random locations inside the maze
         for i in range(self.num_particles):
             p = Pose()
             p.position = Point()
-            p.position.x = (random_index[i] % self.map.info.width) * self.map.info.resolution + self.map.info.origin.position.x
-            #print("Particles initializing")
-            # print("res : %f", self.map.info.resolution)
-            # print("height: %f", self.map.info.height)
-            p.position.y = (random_index[i] // self.map.info.height) * self.map.info.resolution + self.map.info.origin.position.y
+            p.position.x = (random_index[i] % self.map.info.width) * self.map.info.resolution + self.map.info.origin.position.x # Since random_index, just like map.data is a 1D array, we have to either take a remainder for x or divide by height for y to get the positions on a 2D grid
+            p.position.y = (random_index[i] // self.map.info.height) * self.map.info.resolution + self.map.info.origin.position.y # We then multiply by the resolution and add the origin values to make sure the particles are scaled down correctly
             p.position.z = 0
             p.orientation = Quaternion()
             q = quaternion_from_euler(0, 0, random_sample() * 2 * (np.pi))
@@ -169,14 +167,13 @@ class ParticleFilter:
             p.orientation.z = q[2]
             p.orientation.w = q[3]
 
-            new_particle = Particle(p, 1.0)
-            self.particle_cloud.append(new_particle)
+            new_particle = Particle(p, 1.0) 
+            self.particle_cloud.append(new_particle) # After generating a new particle we add it to the particle cloud
 
         self.normalize_particles()
 
         self.publish_particle_cloud()
 
-        print("particles initialized")
 
 
     def normalize_particles(self):
@@ -185,13 +182,8 @@ class ParticleFilter:
         sum = 0
         for p in self.particle_cloud:
             sum += p.w
-        for p in self.particle_cloud:
+        for p in self.particle_cloud: # Divide each weight by the sum of weights in order to normalize
             p.w /= sum
-
-        sum = 0
-        for p in self.particle_cloud:
-            sum += p.w
-        print("SUM", sum)
 
 
 
@@ -219,9 +211,7 @@ class ParticleFilter:
 
 
     def resample_particles(self):
-
         # resample particles via their weights.
-        print("resampling particles")
         weight = []
         for p in self.particle_cloud:
             weight.append(p.w)
@@ -309,10 +299,10 @@ class ParticleFilter:
         sum_y = 0
         sum_yaw = 0
         for p in self.particle_cloud:
-            sum_x += p.pose.position.x
+            sum_x += p.pose.position.x # For x, y and yaw we sum up the corresponding values of each particle on the grid
             sum_y += p.pose.position.y
             sum_yaw += get_yaw_from_pose(p.pose)
-        sum_x /= self.num_particles
+        sum_x /= self.num_particles # We then divide the sum by the number of particles to get average x, y and yaw for the estimated pose
         sum_y /= self.num_particles
         sum_yaw /= self.num_particles
         self.robot_estimate.position.x = sum_x
@@ -325,35 +315,24 @@ class ParticleFilter:
 
 
     def update_particle_weights_with_measurement_model(self, data):
-
-        # TODO
-        print("Updating particle weights")
-        z_max = 4
-        field = self.likelihood_field
         angles = [0, 45, 90, 135, 180, 225, 270, 315]
         #Initially used all 360 degrees but was too laggy
         for particle in self.particle_cloud:
             q = 1
             theta = get_yaw_from_pose(particle.pose)
-            #for i, val in enumerate(data.ranges):
             for ang in angles:
                 rad_i = ang * np.pi / 180
                 val = data.ranges[ang]
-                #print("in loop,, %d, %f", i, val)
                 if val <= data.range_max and val != 0:
                     x_ztk = particle.pose.position.x + val*math.cos(theta + rad_i)
                     y_ztk = particle.pose.position.y + val*math.sin(theta + rad_i)
-                    
-                    dist = self.likelihood_field.get_closest_obstacle_distance(x_ztk, y_ztk)
-                    #print("DIST")
-                    #print(dist)
+                    dist = self.likelihood_field.get_closest_obstacle_distance(x_ztk, y_ztk) # Use the likelyhood_field_range_finder_model algorithm
                     if math.isnan(dist):
-                        #Since dist returns float nan for invalid entries we check
+                        #Since dist returns float nan for invalid entries we check for that and assign a very low weight to that particle
                         q = q * (0.8 * 0.00001 + 1)
                     else:
-                        q = q * (0.8 * compute_prob_zero_centered_gaussian(dist, 0.1) +1)
+                        q = q * (0.8 * compute_prob_zero_centered_gaussian(dist, 0.1) + 1) # Set Zhit to 0.8, Zrand and Zmax to 0.1 (each) 
             particle.w = q
-            print("new particle weight is %f", q)
         
 
     def update_particles_with_motion_model(self):
@@ -361,14 +340,14 @@ class ParticleFilter:
         # based on the how the robot has moved (calculated from its odometry), we'll  move
         # all of the particles correspondingly
 
-        curr_x = self.odom_pose.pose.position.x
+        curr_x = self.odom_pose.pose.position.x # Get the current and old x, y and yaw values
         old_x = self.odom_pose_last_motion_update.pose.position.x
         curr_y = self.odom_pose.pose.position.y
         old_y = self.odom_pose_last_motion_update.pose.position.y
         curr_yaw = get_yaw_from_pose(self.odom_pose.pose)
         old_yaw = get_yaw_from_pose(self.odom_pose_last_motion_update.pose)
 
-        diff_x = curr_x - old_x
+        diff_x = curr_x - old_x #calculate the difference
         diff_y = curr_y - old_y
         diff_yaw = curr_yaw - old_yaw
 
@@ -378,7 +357,7 @@ class ParticleFilter:
         diff_yaw += np.random.normal(0, abs(0.1*diff_yaw))
 
         for p in self.particle_cloud:
-            p.pose.position.x += diff_x
+            p.pose.position.x += diff_x # Add these differences to the old position of the particles
             p.pose.position.y += diff_y
             q = quaternion_from_euler(0.0, 0.0, get_yaw_from_pose(p.pose) + diff_yaw)
             p.pose.orientation.x = q[0]
