@@ -369,11 +369,8 @@ class ParticleFilter:
         old_yaw = get_yaw_from_pose(self.odom_pose_last_motion_update.pose)
 
         diff_x = curr_x - old_x
-        diff_x += np.random.normal(0, abs(0.1*diff_x))
-        diff_y = curr_y - old_y 
-        diff_y += np.random.normal(0, abs(0.1*diff_y))
-        diff_yaw = curr_yaw - old_yaw 
-        diff_yaw += np.random.normal(0, abs(0.1*diff_yaw))
+        diff_y = curr_y - old_y
+        diff_yaw = curr_yaw - old_yaw
 
         #added a random noise that has the standard deviation of 10 percent of original value
         diff_x += np.random.normal(0, abs(0.1*diff_x))
@@ -397,10 +394,6 @@ if __name__=="__main__":
     pf = ParticleFilter()
 
     rospy.spin()
-
-
-
-
 
 
 
